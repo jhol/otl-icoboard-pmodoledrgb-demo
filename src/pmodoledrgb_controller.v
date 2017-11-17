@@ -27,27 +27,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-`timescale 1ns/1ns
-
-module test;
+module pmodoledrgb_controller(clk, reset, cs, sdin, sclk, d_cn, resn, vccen, pmoden);
 parameter ClkFreq = 100000000; // Hz
+input clk, reset;
+output cs, sdin, sclk, d_cn, resn, vccen, pmoden;
 
-reg reset = 0;
-reg start = 0;
-initial begin
-  $dumpfile("pmod_oled.vcd");
-  $dumpvars(0, test);
+// SPI Clock
+localparam SpiDesiredFreq = 6000000; // Hz
+localparam SpiPeriod = (ClkFreq + (SpiDesiredFreq * 2) - 1) / (SpiDesiredFreq * 2);
+localparam SpiFreq = ClkFreq / (SpiPeriod * 2);
+localparam SpiPeriodWidth = $clog2(SpiPeriod);
 
-  #30 reset = 1;
-  #20 reset = 0;
-  #4000000 $finish;
+reg [SpiPeriodWidth:0] spi_counter;
+reg spi_clk;
+
+// Frame begin event
+localparam FrameFreq = 60;
+localparam FrameDiv = SpiFreq / FrameFreq;
+localparam FrameDivWidth = $clog2(FrameDiv);
+
+reg [FrameDivWidth:0] frame_counter;
+wire frame_begin = (frame_counter == 0);
+
+always @(posedge clk) begin
+  if (reset) begin
+    spi_counter <= 0;
+    spi_clk <= 0;
+    frame_counter <= 0;
+  end else begin
+    if (spi_counter == 0) begin
+      spi_counter <= SpiPeriod - 1;
+      spi_clk <= !spi_clk;
+      if (spi_clk)
+        frame_counter <= frame_begin ? FrameDiv : frame_counter - 1;
+    end else
+      spi_counter <= spi_counter - 1;
+  end
 end
-
-reg clk = 0;
-always #5 clk = !clk;
-
-wire cs, sdin, sclk, d_cn, resn, vccen, pmoden;
-
-pmodoledrgb_controller #(ClkFreq) c1(clk, reset, cs, sdin, sclk, d_cn, resn, vccen, pmoden);
 
 endmodule

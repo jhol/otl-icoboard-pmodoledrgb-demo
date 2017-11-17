@@ -36,7 +36,7 @@ simulate: $(outdir)pmod_oled.vcd
 $(outdir)pmod_oled.vcd: $(outdir)pmod_oled-sim
 	cd $(outdir); ./pmod_oled-sim
 
-$(outdir)pmod_oled-sim: sim/main.v
+$(outdir)pmod_oled-sim: src/pmodoledrgb_controller.v sim/main.v
 	mkdir -p $(outdir)
 	iverilog -o $@ $^
 
