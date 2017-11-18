@@ -49,17 +49,60 @@ localparam FrameDivWidth = $clog2(FrameDiv);
 reg [FrameDivWidth:0] frame_counter;
 wire frame_begin = (frame_counter == 0);
 
+// SPI Master
+localparam SpiCommandMaxWidth = 40;
+localparam SpiCommandBitCountWidth = $clog2(SpiCommandMaxWidth-1);
+
+localparam SpiIdle = 3'b001;
+localparam SpiTransfer = 3'b010;
+localparam SpiDeselect = 3'b100;
+
+localparam SpiStateCount = 3;
+
+wire [SpiStateCount-1:0] spi_next_state = spi_fsm_next_state(spi_state, spi_word_bit_count);
+reg [SpiStateCount-1:0] spi_state;
+
+reg [SpiCommandBitCountWidth-1:0] spi_word_bit_count;
+reg [SpiCommandMaxWidth-1:0] spi_word;
+
+assign cs = spi_state != SpiTransfer;
+assign sclk = spi_clk | cs;
+assign sdin = spi_word[SpiCommandMaxWidth-1] & !cs;
+
+function [SpiStateCount-1:0] spi_fsm_next_state;
+  input [SpiStateCount-1:0] state;
+  input [SpiCommandBitCountWidth-1:0] bit_count;
+  case (state)
+    SpiIdle: spi_fsm_next_state = (bit_count == 0) ? SpiIdle : SpiTransfer;
+    SpiTransfer: spi_fsm_next_state = (bit_count == 1) ? SpiDeselect : SpiTransfer;
+    default: spi_fsm_next_state = SpiIdle;
+  endcase
+endfunction
+
 always @(posedge clk) begin
   if (reset) begin
     spi_counter <= 0;
     spi_clk <= 0;
     frame_counter <= 0;
+    spi_state <= SpiIdle;
+    spi_word <= 40'h2500005F3F;
+    spi_word_bit_count <= 40;
   end else begin
     if (spi_counter == 0) begin
       spi_counter <= SpiPeriod - 1;
       spi_clk <= !spi_clk;
+
       if (spi_clk)
         frame_counter <= frame_begin ? FrameDiv : frame_counter - 1;
+
+      // Implements the Mode 3 SPI master
+      if (spi_clk) begin
+        if (spi_state == SpiTransfer) begin
+          spi_word_bit_count <= spi_word_bit_count - 1;
+          spi_word <= {spi_word[SpiCommandMaxWidth-2:0], 1'b0};
+        end
+        spi_state <= spi_next_state;
+      end
     end else
       spi_counter <= spi_counter - 1;
   end
