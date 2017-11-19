@@ -40,7 +40,7 @@ initial begin
 
   #30 reset = 1;
   #20 reset = 0;
-  #4000000 $finish;
+  #250000000 $finish;
 end
 
 reg clk = 0;
