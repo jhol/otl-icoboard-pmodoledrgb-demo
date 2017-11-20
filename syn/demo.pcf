@@ -27,30 +27,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-outdir=_out/
-src=src/pmodoledrgb_controller.v
+set_io clk_100mhz R9
 
-synthesize: $(outdir)demo.bin
-
-$(outdir)demo.blif: syn/top.v syn/demo.pcf $(src)
-	mkdir -p $(outdir)
-	yosys -q -p "synth_ice40 -blif $(outdir)demo.blif" syn/top.v $(src)
-
-$(outdir)demo.asc: $(outdir)demo.blif
-	arachne-pnr -d 8k -p syn/demo.pcf $< -o $@
-
-$(outdir)demo.bin: $(outdir)demo.asc
-	icetime -d hx8k -c 25 $<
-	icepack $< $@
-
-simulate: $(outdir)pmod_oled.vcd
-	gtkwave $< >/dev/null 2>/dev/null &
-
-$(outdir)pmod_oled.vcd: $(outdir)pmod_oled-sim
-	cd $(outdir); ./pmod_oled-sim
-
-$(outdir)pmod_oled-sim: src/pmodoledrgb_controller.v sim/main.v
-	mkdir -p $(outdir)
-	iverilog -o $@ $^
-
-.PHONY: synthesize simulate
+set_io p1_1 D8
+set_io p1_2 B9
+set_io p1_3 B10
+set_io p1_4 B11
+set_io p1_7 B8
+set_io p1_8 A9
+set_io p1_9 A10
+set_io p1_10 A11
