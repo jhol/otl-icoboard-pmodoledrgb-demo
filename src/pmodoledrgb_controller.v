@@ -28,7 +28,7 @@
  */
 
 module pmodoledrgb_controller(clk, reset, cs, sdin, sclk, d_cn, resn, vccen, pmoden);
-parameter ClkFreq = 100000000; // Hz
+parameter ClkFreq = 25000000; // Hz
 input clk, reset;
 output cs, sdin, sclk, d_cn, resn, vccen, pmoden;
 

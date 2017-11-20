@@ -30,7 +30,7 @@
 `timescale 1ns/1ns
 
 module test;
-parameter ClkFreq = 100000000; // Hz
+parameter ClkFreq = 25000000; // Hz
 
 reg reset = 0;
 reg start = 0;
@@ -38,13 +38,13 @@ initial begin
   $dumpfile("pmod_oled.vcd");
   $dumpvars(0, test);
 
-  #30 reset = 1;
-  #20 reset = 0;
+  #80 reset = 1;
+  #40 reset = 0;
   #250000000 $finish;
 end
 
 reg clk = 0;
-always #5 clk = !clk;
+always #20 clk = !clk;
 
 wire cs, sdin, sclk, d_cn, resn, vccen, pmoden;
 
