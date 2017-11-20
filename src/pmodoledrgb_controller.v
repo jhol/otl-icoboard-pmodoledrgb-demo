@@ -27,9 +27,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-module pmodoledrgb_controller(clk, reset, cs, sdin, sclk, d_cn, resn, vccen, pmoden);
+module pmodoledrgb_controller(clk, reset, frame_begin, cs, sdin, sclk, d_cn,
+  resn, vccen, pmoden);
 parameter ClkFreq = 25000000; // Hz
 input clk, reset;
+output frame_begin;
 output cs, sdin, sclk, d_cn, resn, vccen, pmoden;
 
 // SPI Clock
@@ -47,7 +49,7 @@ localparam FrameDiv = SpiFreq / FrameFreq;
 localparam FrameDivWidth = $clog2(FrameDiv);
 
 reg [FrameDivWidth:0] frame_counter;
-wire frame_begin = (frame_counter == 0);
+assign frame_begin = (frame_counter == 0);
 
 // Video
 localparam Width = 96;

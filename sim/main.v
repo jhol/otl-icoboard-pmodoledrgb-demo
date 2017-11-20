@@ -46,8 +46,9 @@ end
 reg clk = 0;
 always #20 clk = !clk;
 
-wire cs, sdin, sclk, d_cn, resn, vccen, pmoden;
+wire frame_begin, cs, sdin, sclk, d_cn, resn, vccen, pmoden;
 
-pmodoledrgb_controller #(ClkFreq) c1(clk, reset, cs, sdin, sclk, d_cn, resn, vccen, pmoden);
+pmodoledrgb_controller #(ClkFreq) c1(clk, reset, frame_begin, cs, sdin, sclk,
+  d_cn, resn, vccen, pmoden);
 
 endmodule
