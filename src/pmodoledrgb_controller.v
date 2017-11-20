@@ -33,7 +33,7 @@ input clk, reset;
 output cs, sdin, sclk, d_cn, resn, vccen, pmoden;
 
 // SPI Clock
-localparam SpiDesiredFreq = 6000000; // Hz
+localparam SpiDesiredFreq = 6250000; // Hz
 localparam SpiPeriod = (ClkFreq + (SpiDesiredFreq * 2) - 1) / (SpiDesiredFreq * 2);
 localparam SpiFreq = ClkFreq / (SpiPeriod * 2);
 localparam SpiPeriodWidth = $clog2(SpiPeriod);
