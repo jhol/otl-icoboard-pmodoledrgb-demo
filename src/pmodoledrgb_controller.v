@@ -42,6 +42,8 @@ localparam SpiPeriodWidth = $clog2(SpiPeriod);
 
 reg [SpiPeriodWidth:0] spi_counter;
 reg spi_clk;
+reg [1:0] spi_reset_gen;
+reg spi_reset;
 
 // Frame begin event
 localparam FrameFreq = 30;
@@ -67,7 +69,7 @@ localparam StartupCompleteDelay = 100000000; // ns
 
 localparam MaxDelay = StartupCompleteDelay; // ns
 localparam MaxDelayCount = (SpiFreq * MaxDelay) / 1000000000;
-reg [$clog2(MaxDelayCount-1):0] delay;
+reg [$clog2(MaxDelayCount-1)-1:0] delay;
 
 localparam StateCount = 31;
 
@@ -187,6 +189,21 @@ always @(posedge clk) begin
   if (reset) begin
     spi_counter <= 0;
     spi_clk <= 0;
+    spi_reset_gen <= 0;
+  end else begin
+    if (spi_counter == 0) begin
+      spi_reset <= 0;
+      spi_counter <= SpiPeriod - 1;
+      spi_clk <= !spi_clk;
+      spi_reset_gen <= {spi_reset_gen, 1'b1};
+    end else
+      spi_counter <= spi_counter - 1;
+  end
+  spi_reset <= !(&spi_reset_gen);
+end
+
+always @(negedge spi_clk) begin
+  if (spi_reset) begin
     frame_counter <= 0;
     delay <= 0;
     state <= 0;
@@ -194,221 +211,212 @@ always @(posedge clk) begin
     spi_word <= 0;
     spi_word_bit_count <= 0;
   end else begin
-    if (spi_counter == 0) begin
-      spi_counter <= SpiPeriod - 1;
-      spi_clk <= !spi_clk;
+    frame_counter <= frame_begin ? FrameDiv : frame_counter - 1;
 
-      if (spi_clk) begin
-        frame_counter <= frame_begin ? FrameDiv : frame_counter - 1;
-        delay <= (delay != 0) ? delay - 1 : 0;
-      end
-
-      // Implements the FSM
-      if (!spi_busy && delay == 0) begin
-        state <= next_state;
-        case (next_state)
-          PowerUp: begin
-            spi_word <= 0;
-            spi_word_bit_count <= 0;
-            delay <= (SpiFreq * PowerDelay) / 1000000000 + 1;
-          end
-          Reset: begin
-            spi_word <= 0;
-            spi_word_bit_count <= 0;
-            delay <= (SpiFreq * ResetDelay) / 1000000000 + 1;
-          end
-          ReleaseReset: begin
-            spi_word <= 0;
-            spi_word_bit_count <= 0;
-            delay <= (SpiFreq * ResetDelay) / 1000000000 + 1;
-          end
-          EnableDriver: begin
-            // Enable the driver
-            spi_word <= {16'hFD12, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          DisplayOff: begin
-            // Turn the display off
-            spi_word <= {8'hAE, {SpiCommandMaxWidth-8{1'b0}}};
-            spi_word_bit_count <= 8;
-            delay <= 0;
-          end
-          SetRemapDisplayFormat: begin
-            // Set the remap and display formats
-            spi_word <= {16'hA072, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetStartLine: begin
-            // Set the display start line to the top line
-            spi_word <= {16'hA100, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetOffset: begin
-            // Set the display offset to no vertical offset
-            spi_word <= {16'hA200, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetNormalDisplay: begin
-            // Make it a normal display with no color inversion or forcing
-            // pixels on/off
-            spi_word <= {8'hA4, {SpiCommandMaxWidth-8{1'b0}}};
-            spi_word_bit_count <= 8;
-            delay <= 0;
-          end
-          SetMultiplexRatio: begin
-            // Set the multiplex ratio to enable all of the common pins
-            // calculated by thr 1+register value
-            spi_word <= {16'hA83F, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetMasterConfiguration: begin
-            // Set the master configuration to use a required a required
-            // external Vcc supply.
-            spi_word <= {16'hAD8E, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          DisablePowerSave: begin
-            // Disable power saving mode.
-            spi_word <= {16'hB00B, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetPhaseAdjust: begin
-            // Set the phase length of the charge and dischare rates of
-            // an OLED pixel.
-            spi_word <= {16'hB131, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetDisplayClock: begin
-            // Set the display clock divide ration and oscillator frequency
-            spi_word <= {16'hB3F0, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetSecondPrechargeA: begin
-            // Set the second pre-charge speed of color A
-            spi_word <= {16'h8A64, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetSecondPrechargeB: begin
-            // Set the second pre-charge speed of color B
-            spi_word <= {16'h8B78, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetSecondPrechargeC: begin
-            // Set the second pre-charge speed of color C
-            spi_word <= {16'h8C64, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetPrechargeLevel: begin
-            // Set the pre-charge voltage to approximately 45% of Vcc
-            spi_word <= {16'hBB3A, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetVCOMH: begin
-            // Set the VCOMH deselect level
-            spi_word <= {16'hBE3E, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetMasterCurrent: begin
-            // Set the master current attenuation
-            spi_word <= {16'h8706, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetContrastA: begin
-            // Set the contrast for color A
-            spi_word <= {16'h8191, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetContrastB: begin
-            // Set the contrast for color B
-            spi_word <= {16'h8250, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          SetContrastC: begin
-            // Set the contrast for color C
-            spi_word <= {16'h837D, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          DisableScrolling: begin
-            // Disable scrolling
-            spi_word <= {8'h25, {SpiCommandMaxWidth-8{1'b0}}};
-            spi_word_bit_count <= 8;
-            delay <= 0;
-          end
-          ClearScreen: begin
-            // Clear the screen
-            spi_word <= {40'h2500005F3F, {SpiCommandMaxWidth-40{1'b0}}};
-            spi_word_bit_count <= 40;
-            delay <= 0;
-          end
-          VccEn: begin
-            spi_word <= 0;
-            spi_word_bit_count <= 0;
-            delay <= (SpiFreq * VccEnDelay) / 1000000000 + 1;
-          end
-          DisplayOn: begin
-            // Turn the display on
-            spi_word <= {8'hAF, {SpiCommandMaxWidth-8{1'b0}}};
-            spi_word_bit_count <= 8;
-            delay <= (SpiFreq * StartupCompleteDelay) / 1000000000 + 1;
-          end
-          SetColAddress: begin
-            // Set the column address
-            spi_word <= {24'h15005F, {SpiCommandMaxWidth-24{1'b0}}};
-            spi_word_bit_count <= 24;
-            delay <= 0;
-          end
-          SetRowAddress: begin
-            // Set the row address
-            spi_word <= {24'h75003F, {SpiCommandMaxWidth-24{1'b0}}};
-            spi_word_bit_count <= 24;
-            delay <= 0;
-          end
-          SendPixel: begin
-            spi_word <= {16'h5555, {SpiCommandMaxWidth-16{1'b0}}};
-            spi_word_bit_count <= 16;
-            delay <= 0;
-          end
-          default: begin
-            spi_word <= 0;
-            spi_word_bit_count <= 0;
-            delay <= 0;
-          end
-        endcase
-
-        if (state == SendPixel)
-          pixels_remain <= pixels_remain - 1;
-        else
-          pixels_remain <= PixelCount - 1;
-      end
-
-      // Implements the Mode 3 SPI master
-      if (spi_clk) begin
-        if (spi_state == SpiTransfer) begin
-          spi_word_bit_count <= spi_word_bit_count - 1;
-          spi_word <= {spi_word[SpiCommandMaxWidth-2:0], 1'b0};
+    // Implements the FSM
+    if (delay != 0)
+      delay <= delay - 1;
+    else if (!spi_busy) begin
+      state <= next_state;
+      case (next_state)
+        PowerUp: begin
+          spi_word <= 0;
+          spi_word_bit_count <= 0;
+          delay <= (SpiFreq * PowerDelay) / 1000000000 + 1;
         end
-        spi_state <= spi_next_state;
-      end
-    end else
-      spi_counter <= spi_counter - 1;
+        Reset: begin
+          spi_word <= 0;
+          spi_word_bit_count <= 0;
+          delay <= (SpiFreq * ResetDelay) / 1000000000 + 1;
+        end
+        ReleaseReset: begin
+          spi_word <= 0;
+          spi_word_bit_count <= 0;
+          delay <= (SpiFreq * ResetDelay) / 1000000000 + 1;
+        end
+        EnableDriver: begin
+          // Enable the driver
+          spi_word <= {16'hFD12, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        DisplayOff: begin
+          // Turn the display off
+          spi_word <= {8'hAE, {SpiCommandMaxWidth-8{1'b0}}};
+          spi_word_bit_count <= 8;
+          delay <= 0;
+        end
+        SetRemapDisplayFormat: begin
+          // Set the remap and display formats
+          spi_word <= {16'hA072, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetStartLine: begin
+          // Set the display start line to the top line
+          spi_word <= {16'hA100, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetOffset: begin
+          // Set the display offset to no vertical offset
+          spi_word <= {16'hA200, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetNormalDisplay: begin
+          // Make it a normal display with no color inversion or forcing
+          // pixels on/off
+          spi_word <= {8'hA4, {SpiCommandMaxWidth-8{1'b0}}};
+          spi_word_bit_count <= 8;
+          delay <= 0;
+        end
+        SetMultiplexRatio: begin
+          // Set the multiplex ratio to enable all of the common pins
+          // calculated by thr 1+register value
+          spi_word <= {16'hA83F, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetMasterConfiguration: begin
+          // Set the master configuration to use a required a required
+          // external Vcc supply.
+          spi_word <= {16'hAD8E, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        DisablePowerSave: begin
+          // Disable power saving mode.
+          spi_word <= {16'hB00B, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetPhaseAdjust: begin
+          // Set the phase length of the charge and dischare rates of
+          // an OLED pixel.
+          spi_word <= {16'hB131, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetDisplayClock: begin
+          // Set the display clock divide ration and oscillator frequency
+          spi_word <= {16'hB3F0, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetSecondPrechargeA: begin
+          // Set the second pre-charge speed of color A
+          spi_word <= {16'h8A64, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetSecondPrechargeB: begin
+          // Set the second pre-charge speed of color B
+          spi_word <= {16'h8B78, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetSecondPrechargeC: begin
+          // Set the second pre-charge speed of color C
+          spi_word <= {16'h8C64, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetPrechargeLevel: begin
+          // Set the pre-charge voltage to approximately 45% of Vcc
+          spi_word <= {16'hBB3A, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetVCOMH: begin
+          // Set the VCOMH deselect level
+          spi_word <= {16'hBE3E, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetMasterCurrent: begin
+          // Set the master current attenuation
+          spi_word <= {16'h8706, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetContrastA: begin
+          // Set the contrast for color A
+          spi_word <= {16'h8191, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetContrastB: begin
+          // Set the contrast for color B
+          spi_word <= {16'h8250, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        SetContrastC: begin
+          // Set the contrast for color C
+          spi_word <= {16'h837D, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        DisableScrolling: begin
+          // Disable scrolling
+          spi_word <= {8'h25, {SpiCommandMaxWidth-8{1'b0}}};
+          spi_word_bit_count <= 8;
+          delay <= 0;
+        end
+        ClearScreen: begin
+          // Clear the screen
+          spi_word <= {40'h2500005F3F, {SpiCommandMaxWidth-40{1'b0}}};
+          spi_word_bit_count <= 40;
+          delay <= 0;
+        end
+        VccEn: begin
+          spi_word <= 0;
+          spi_word_bit_count <= 0;
+          delay <= (SpiFreq * VccEnDelay) / 1000000000 + 1;
+        end
+        DisplayOn: begin
+          // Turn the display on
+          spi_word <= {8'hAF, {SpiCommandMaxWidth-8{1'b0}}};
+          spi_word_bit_count <= 8;
+          delay <= (SpiFreq * StartupCompleteDelay) / 1000000000 + 1;
+        end
+        SetColAddress: begin
+          // Set the column address
+          spi_word <= {24'h15005F, {SpiCommandMaxWidth-24{1'b0}}};
+          spi_word_bit_count <= 24;
+          delay <= 0;
+        end
+        SetRowAddress: begin
+          // Set the row address
+          spi_word <= {24'h75003F, {SpiCommandMaxWidth-24{1'b0}}};
+          spi_word_bit_count <= 24;
+          delay <= 0;
+        end
+        SendPixel: begin
+          spi_word <= {16'h5555, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word_bit_count <= 16;
+          delay <= 0;
+        end
+        default: begin
+          spi_word <= 0;
+          spi_word_bit_count <= 0;
+          delay <= 0;
+        end
+      endcase
+
+      if (state == SendPixel)
+        pixels_remain <= pixels_remain - 1;
+      else
+        pixels_remain <= PixelCount - 1;
+    end
+
+    // Implements the Mode 3 SPI master
+    if (spi_state == SpiTransfer) begin
+      spi_word_bit_count <= spi_word_bit_count - 1;
+      spi_word <= {spi_word[SpiCommandMaxWidth-2:0], 1'b0};
+    end
+    spi_state <= spi_next_state;
   end
 end
 
