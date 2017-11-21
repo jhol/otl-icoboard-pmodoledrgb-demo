@@ -111,6 +111,8 @@ assign vccen = state == VccEn || state == DisplayOn || state == WaitNextFrame ||
   state == SetColAddress || state == SetRowAddress || state == SendPixel;
 assign pmoden = !reset;
 
+reg [15:0] color;
+
 reg [StateCount-1:0] state;
 wire [StateCount-1:0] next_state = fsm_next_state(state, frame_begin, pixels_remain);
 
@@ -210,8 +212,12 @@ always @(negedge spi_clk) begin
     spi_state <= SpiIdle;
     spi_word <= 0;
     spi_word_bit_count <= 0;
+    color <= 0;
   end else begin
     frame_counter <= frame_begin ? FrameDiv : frame_counter - 1;
+
+    if (frame_begin)
+      color <= color + 1;
 
     // Implements the FSM
     if (delay != 0)
@@ -394,7 +400,7 @@ always @(negedge spi_clk) begin
           delay <= 0;
         end
         SendPixel: begin
-          spi_word <= {16'h5555, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word <= {color, {SpiCommandMaxWidth-16{1'b0}}};
           spi_word_bit_count <= 16;
           delay <= 0;
         end
