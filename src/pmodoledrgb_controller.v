@@ -27,6 +27,41 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+module pmodoledrgb_clkgen(in_clk, in_reset, out_clk, out_reset);
+parameter Period = 1;
+input in_clk, in_reset;
+output out_clk, out_reset;
+
+localparam PeriodWidth = $clog2(Period);
+
+reg [PeriodWidth-1:0] counter;
+reg clk_reg;
+reg [1:0] reset_gen;
+reg reset_reg;
+
+assign out_clk = clk_reg;
+assign out_reset = reset_reg;
+
+always @(posedge in_clk) begin
+  if (in_reset) begin
+    counter <= 0;
+    clk_reg <= 0;
+    reset_gen <= 0;
+  end else begin
+    if (counter == 0) begin
+      reset_reg <= 0;
+      counter <= Period - 1;
+      clk_reg <= !clk_reg;
+      reset_gen <= {reset_gen, 1'b1};
+    end else
+      counter <= counter - 1;
+  end
+  reset_reg <= !(&reset_gen);
+end
+
+endmodule
+
+
 module pmodoledrgb_controller(clk, reset, frame_begin, cs, sdin, sclk, d_cn,
   resn, vccen, pmoden);
 parameter ClkFreq = 25000000; // Hz
@@ -34,16 +69,12 @@ input clk, reset;
 output frame_begin;
 output cs, sdin, sclk, d_cn, resn, vccen, pmoden;
 
-// SPI Clock
 localparam SpiDesiredFreq = 6250000; // Hz
 localparam SpiPeriod = (ClkFreq + (SpiDesiredFreq * 2) - 1) / (SpiDesiredFreq * 2);
 localparam SpiFreq = ClkFreq / (SpiPeriod * 2);
-localparam SpiPeriodWidth = $clog2(SpiPeriod);
 
-reg [SpiPeriodWidth:0] spi_counter;
-reg spi_clk;
-reg [1:0] spi_reset_gen;
-reg spi_reset;
+wire spi_clk, spi_reset;
+pmodoledrgb_clkgen #(SpiPeriod) spi_clkgen(clk, reset, spi_clk, spi_reset);
 
 // Frame begin event
 localparam FrameFreq = 30;
@@ -186,23 +217,6 @@ function [SpiStateCount-1:0] spi_fsm_next_state;
     default: spi_fsm_next_state = SpiIdle;
   endcase
 endfunction
-
-always @(posedge clk) begin
-  if (reset) begin
-    spi_counter <= 0;
-    spi_clk <= 0;
-    spi_reset_gen <= 0;
-  end else begin
-    if (spi_counter == 0) begin
-      spi_reset <= 0;
-      spi_counter <= SpiPeriod - 1;
-      spi_clk <= !spi_clk;
-      spi_reset_gen <= {spi_reset_gen, 1'b1};
-    end else
-      spi_counter <= spi_counter - 1;
-  end
-  spi_reset <= !(&spi_reset_gen);
-end
 
 always @(negedge spi_clk) begin
   if (spi_reset) begin
