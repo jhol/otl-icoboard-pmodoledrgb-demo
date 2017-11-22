@@ -191,39 +191,19 @@ endfunction
 localparam SpiCommandMaxWidth = 40;
 localparam SpiCommandBitCountWidth = $clog2(SpiCommandMaxWidth-1);
 
-localparam SpiIdle = 3'b001;
-localparam SpiTransfer = 3'b010;
-localparam SpiDeselect = 3'b100;
-
-localparam SpiStateCount = 3;
-
-wire [SpiStateCount-1:0] spi_next_state = spi_fsm_next_state(spi_state, spi_word_bit_count);
-reg [SpiStateCount-1:0] spi_state;
-wire spi_busy = (spi_state != SpiIdle) || (spi_word_bit_count != 0);
-
 reg [SpiCommandBitCountWidth-1:0] spi_word_bit_count;
 reg [SpiCommandMaxWidth-1:0] spi_word;
 
-assign cs = spi_state != SpiTransfer;
-assign sclk = spi_clk | cs;
-assign sdin = spi_word[SpiCommandMaxWidth-1] & !cs;
-
-function [SpiStateCount-1:0] spi_fsm_next_state;
-  input [SpiStateCount-1:0] state;
-  input [SpiCommandBitCountWidth-1:0] bit_count;
-  case (state)
-    SpiIdle: spi_fsm_next_state = (bit_count == 0) ? SpiIdle : SpiTransfer;
-    SpiTransfer: spi_fsm_next_state = (bit_count == 1) ? SpiDeselect : SpiTransfer;
-    default: spi_fsm_next_state = SpiIdle;
-  endcase
-endfunction
+wire spi_busy = spi_word_bit_count != 0;
+assign cs = !spi_busy;
+assign sclk = spi_clk | !spi_busy;
+assign sdin = spi_word[SpiCommandMaxWidth-1] & spi_busy;
 
 always @(negedge spi_clk) begin
   if (spi_reset) begin
     frame_counter <= 0;
     delay <= 0;
     state <= 0;
-    spi_state <= SpiIdle;
     spi_word <= 0;
     spi_word_bit_count <= 0;
     color <= 0;
@@ -233,10 +213,12 @@ always @(negedge spi_clk) begin
     if (frame_begin)
       color <= color + 1;
 
-    // Implements the FSM
-    if (delay != 0)
+    if (spi_busy) begin
+      spi_word_bit_count <= spi_word_bit_count - 1;
+      spi_word <= {spi_word[SpiCommandMaxWidth-2:0], 1'b0};
+    end else if (delay != 0)
       delay <= delay - 1;
-    else if (!spi_busy) begin
+    else begin
       state <= next_state;
       case (next_state)
         PowerUp: begin
@@ -430,13 +412,6 @@ always @(negedge spi_clk) begin
       else
         pixels_remain <= PixelCount - 1;
     end
-
-    // Implements the Mode 3 SPI master
-    if (spi_state == SpiTransfer) begin
-      spi_word_bit_count <= spi_word_bit_count - 1;
-      spi_word <= {spi_word[SpiCommandMaxWidth-2:0], 1'b0};
-    end
-    spi_state <= spi_next_state;
   end
 end
 
