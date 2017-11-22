@@ -93,14 +93,14 @@ localparam PixelCountWidth = $clog2(PixelCount-1);
 reg [PixelCountWidth-1:0] pixels_remain;
 
 // State Machine
-localparam PowerDelay = 20000000; // ns
-localparam ResetDelay = 3000; // ns
-localparam VccEnDelay = 25000000; // ns
-localparam StartupCompleteDelay = 100000000; // ns
+localparam PowerDelay = 20; // ms
+localparam ResetDelay = 3; // us
+localparam VccEnDelay = 20; // ms
+localparam StartupCompleteDelay = 100; // ms
 
-localparam MaxDelay = StartupCompleteDelay; // ns
-localparam MaxDelayCount = (SpiFreq * MaxDelay) / 1000000000;
-reg [$clog2(MaxDelayCount-1)-1:0] delay;
+localparam MaxDelay = StartupCompleteDelay;
+localparam MaxDelayCount = (SpiFreq * MaxDelay) / 1000;
+reg [$clog2(MaxDelayCount)-1:0] delay;
 
 localparam StateCount = 31;
 
@@ -226,17 +226,17 @@ always @(negedge spi_clk) begin
         PowerUp: begin
           spi_word <= 0;
           spi_word_bit_count <= 0;
-          delay <= (SpiFreq * PowerDelay) / 1000000000 + 1;
+          delay <= (SpiFreq * PowerDelay) / 1000;
         end
         Reset: begin
           spi_word <= 0;
           spi_word_bit_count <= 0;
-          delay <= (SpiFreq * ResetDelay) / 1000000000 + 1;
+          delay <= (SpiFreq * ResetDelay) / 1000;
         end
         ReleaseReset: begin
           spi_word <= 0;
           spi_word_bit_count <= 0;
-          delay <= (SpiFreq * ResetDelay) / 1000000000 + 1;
+          delay <= (SpiFreq * ResetDelay) / 1000;
         end
         EnableDriver: begin
           // Enable the driver
@@ -377,13 +377,13 @@ always @(negedge spi_clk) begin
         VccEn: begin
           spi_word <= 0;
           spi_word_bit_count <= 0;
-          delay <= (SpiFreq * VccEnDelay) / 1000000000 + 1;
+          delay <= (SpiFreq * VccEnDelay) / 1000;
         end
         DisplayOn: begin
           // Turn the display on
           spi_word <= {8'hAF, {SpiCommandMaxWidth-8{1'b0}}};
           spi_word_bit_count <= 8;
-          delay <= (SpiFreq * StartupCompleteDelay) / 1000000000 + 1;
+          delay <= (SpiFreq * StartupCompleteDelay) / 1000;
         end
         SetColAddress: begin
           // Set the column address
