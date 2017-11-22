@@ -27,58 +27,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-module pmodoledrgb_clkgen(in_clk, in_reset, out_clk, out_reset);
-parameter Period = 1;
-input in_clk, in_reset;
-output out_clk, out_reset;
-
-localparam PeriodWidth = $clog2(Period);
-
-reg [PeriodWidth-1:0] counter;
-reg clk_reg;
-reg [1:0] reset_gen;
-reg reset_reg;
-
-assign out_clk = clk_reg;
-assign out_reset = reset_reg;
-
-always @(posedge in_clk) begin
-  if (in_reset) begin
-    counter <= 0;
-    clk_reg <= 0;
-    reset_gen <= 0;
-  end else begin
-    if (counter == 0) begin
-      reset_reg <= 0;
-      counter <= Period - 1;
-      clk_reg <= !clk_reg;
-      reset_gen <= {reset_gen, 1'b1};
-    end else
-      counter <= counter - 1;
-  end
-  reset_reg <= !(&reset_gen);
-end
-
-endmodule
-
-
 module pmodoledrgb_controller(clk, reset, frame_begin, cs, sdin, sclk, d_cn,
   resn, vccen, pmoden);
-parameter ClkFreq = 25000000; // Hz
+parameter ClkFreq = 6250000; // Hz
 input clk, reset;
 output frame_begin;
 output cs, sdin, sclk, d_cn, resn, vccen, pmoden;
 
-localparam SpiDesiredFreq = 6250000; // Hz
-localparam SpiPeriod = (ClkFreq + (SpiDesiredFreq * 2) - 1) / (SpiDesiredFreq * 2);
-localparam SpiFreq = ClkFreq / (SpiPeriod * 2);
-
-wire spi_clk, spi_reset;
-pmodoledrgb_clkgen #(SpiPeriod) spi_clkgen(clk, reset, spi_clk, spi_reset);
-
 // Frame begin event
 localparam FrameFreq = 60;
-localparam FrameDiv = SpiFreq / FrameFreq;
+localparam FrameDiv = ClkFreq / FrameFreq;
 localparam FrameDivWidth = $clog2(FrameDiv);
 
 reg [FrameDivWidth-1:0] frame_counter;
@@ -99,7 +57,7 @@ localparam VccEnDelay = 20; // ms
 localparam StartupCompleteDelay = 100; // ms
 
 localparam MaxDelay = StartupCompleteDelay;
-localparam MaxDelayCount = (SpiFreq * MaxDelay) / 1000;
+localparam MaxDelayCount = (ClkFreq * MaxDelay) / 1000;
 reg [$clog2(MaxDelayCount)-1:0] delay;
 
 localparam StateCount = 31;
@@ -196,11 +154,11 @@ reg [SpiCommandMaxWidth-1:0] spi_word;
 
 wire spi_busy = spi_word_bit_count != 0;
 assign cs = !spi_busy;
-assign sclk = spi_clk | !spi_busy;
+assign sclk = clk | !spi_busy;
 assign sdin = spi_word[SpiCommandMaxWidth-1] & spi_busy;
 
-always @(negedge spi_clk) begin
-  if (spi_reset) begin
+always @(negedge clk) begin
+  if (reset) begin
     frame_counter <= 0;
     delay <= 0;
     state <= 0;
@@ -226,17 +184,17 @@ always @(negedge spi_clk) begin
         PowerUp: begin
           spi_word <= 0;
           spi_word_bit_count <= 0;
-          delay <= (SpiFreq * PowerDelay) / 1000;
+          delay <= (ClkFreq * PowerDelay) / 1000;
         end
         Reset: begin
           spi_word <= 0;
           spi_word_bit_count <= 0;
-          delay <= (SpiFreq * ResetDelay) / 1000;
+          delay <= (ClkFreq * ResetDelay) / 1000;
         end
         ReleaseReset: begin
           spi_word <= 0;
           spi_word_bit_count <= 0;
-          delay <= (SpiFreq * ResetDelay) / 1000;
+          delay <= (ClkFreq * ResetDelay) / 1000;
         end
         EnableDriver: begin
           // Enable the driver
@@ -377,13 +335,13 @@ always @(negedge spi_clk) begin
         VccEn: begin
           spi_word <= 0;
           spi_word_bit_count <= 0;
-          delay <= (SpiFreq * VccEnDelay) / 1000;
+          delay <= (ClkFreq * VccEnDelay) / 1000;
         end
         DisplayOn: begin
           // Turn the display on
           spi_word <= {8'hAF, {SpiCommandMaxWidth-8{1'b0}}};
           spi_word_bit_count <= 8;
-          delay <= (SpiFreq * StartupCompleteDelay) / 1000;
+          delay <= (ClkFreq * StartupCompleteDelay) / 1000;
         end
         SetColAddress: begin
           // Set the column address
