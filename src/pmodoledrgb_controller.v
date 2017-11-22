@@ -81,14 +81,14 @@ localparam FrameFreq = 60;
 localparam FrameDiv = SpiFreq / FrameFreq;
 localparam FrameDivWidth = $clog2(FrameDiv);
 
-reg [FrameDivWidth:0] frame_counter;
+reg [FrameDivWidth-1:0] frame_counter;
 assign frame_begin = (frame_counter == 0);
 
 // Video
 localparam Width = 96;
 localparam Height = 64;
 localparam PixelCount = Width * Height;
-localparam PixelCountWidth = $clog2(PixelCount-1);
+localparam PixelCountWidth = $clog2(PixelCount);
 
 reg [PixelCountWidth-1:0] pixels_remain;
 
@@ -189,7 +189,7 @@ endfunction
 
 // SPI Master
 localparam SpiCommandMaxWidth = 40;
-localparam SpiCommandBitCountWidth = $clog2(SpiCommandMaxWidth-1);
+localparam SpiCommandBitCountWidth = $clog2(SpiCommandMaxWidth);
 
 reg [SpiCommandBitCountWidth-1:0] spi_word_bit_count;
 reg [SpiCommandMaxWidth-1:0] spi_word;
