@@ -77,7 +77,7 @@ wire spi_clk, spi_reset;
 pmodoledrgb_clkgen #(SpiPeriod) spi_clkgen(clk, reset, spi_clk, spi_reset);
 
 // Frame begin event
-localparam FrameFreq = 30;
+localparam FrameFreq = 60;
 localparam FrameDiv = SpiFreq / FrameFreq;
 localparam FrameDivWidth = $clog2(FrameDiv);
 
