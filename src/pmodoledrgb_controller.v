@@ -40,7 +40,7 @@ localparam FrameDiv = ClkFreq / FrameFreq;
 localparam FrameDivWidth = $clog2(FrameDiv);
 
 reg [FrameDivWidth-1:0] frame_counter;
-assign frame_begin = (frame_counter == 0);
+assign frame_begin = (frame_counter == FrameDiv-1);
 
 // Video
 localparam Width = 96;
@@ -48,7 +48,7 @@ localparam Height = 64;
 localparam PixelCount = Width * Height;
 localparam PixelCountWidth = $clog2(PixelCount);
 
-reg [PixelCountWidth-1:0] pixels_remain;
+wire [PixelCountWidth-1:0] pixel_index = frame_counter[FrameDivWidth-1:$clog2(16)];
 
 // State Machine
 localparam PowerDelay = 20; // ms
@@ -60,50 +60,52 @@ localparam MaxDelay = StartupCompleteDelay;
 localparam MaxDelayCount = (ClkFreq * MaxDelay) / 1000;
 reg [$clog2(MaxDelayCount)-1:0] delay;
 
-localparam StateCount = 31;
+localparam StateCount = 32;
 
-localparam PowerUp = (31'h1 << 0);
-localparam Reset = (31'h1 << 1);
-localparam ReleaseReset = (31'h1 << 2);
-localparam EnableDriver = (31'h1 << 3);
-localparam DisplayOff = (31'h1 << 4);
-localparam SetRemapDisplayFormat = (31'h1 << 5);
-localparam SetStartLine = (31'h1 << 6);
-localparam SetOffset = (31'h1 << 7);
-localparam SetNormalDisplay = (31'h1 << 8);
-localparam SetMultiplexRatio = (31'h1 << 9);
-localparam SetMasterConfiguration = (31'h1 << 10);
-localparam DisablePowerSave = (31'h1 << 11);
-localparam SetPhaseAdjust = (31'h1 << 12);
-localparam SetDisplayClock = (31'h1 << 13);
-localparam SetSecondPrechargeA = (31'h1 << 14);
-localparam SetSecondPrechargeB = (31'h1 << 15);
-localparam SetSecondPrechargeC = (31'h1 << 16);
-localparam SetPrechargeLevel = (31'h1 << 17);
-localparam SetVCOMH = (31'h1 << 18);
-localparam SetMasterCurrent = (31'h1 << 19);
-localparam SetContrastA = (31'h1 << 20);
-localparam SetContrastB = (31'h1 << 21);
-localparam SetContrastC = (31'h1 << 22);
-localparam DisableScrolling = (31'h1 << 23);
-localparam ClearScreen = (31'h1 << 24);
-localparam VccEn = (31'h1 << 25);
-localparam DisplayOn = (31'h1 << 26);
-localparam WaitNextFrame = (31'h1 << 27);
-localparam SetColAddress = (31'h1 << 28);
-localparam SetRowAddress = (31'h1 << 29);
-localparam SendPixel = (31'h1 << 30);
+localparam PowerUp = (32'h1 << 0);
+localparam Reset = (32'h1 << 1);
+localparam ReleaseReset = (32'h1 << 2);
+localparam EnableDriver = (32'h1 << 3);
+localparam DisplayOff = (32'h1 << 4);
+localparam SetRemapDisplayFormat = (32'h1 << 5);
+localparam SetStartLine = (32'h1 << 6);
+localparam SetOffset = (32'h1 << 7);
+localparam SetNormalDisplay = (32'h1 << 8);
+localparam SetMultiplexRatio = (32'h1 << 9);
+localparam SetMasterConfiguration = (32'h1 << 10);
+localparam DisablePowerSave = (32'h1 << 11);
+localparam SetPhaseAdjust = (32'h1 << 12);
+localparam SetDisplayClock = (32'h1 << 13);
+localparam SetSecondPrechargeA = (32'h1 << 14);
+localparam SetSecondPrechargeB = (32'h1 << 15);
+localparam SetSecondPrechargeC = (32'h1 << 16);
+localparam SetPrechargeLevel = (32'h1 << 17);
+localparam SetVCOMH = (32'h1 << 18);
+localparam SetMasterCurrent = (32'h1 << 19);
+localparam SetContrastA = (32'h1 << 20);
+localparam SetContrastB = (32'h1 << 21);
+localparam SetContrastC = (32'h1 << 22);
+localparam DisableScrolling = (32'h1 << 23);
+localparam ClearScreen = (32'h1 << 24);
+localparam VccEn = (32'h1 << 25);
+localparam DisplayOn = (32'h1 << 26);
+localparam PrepareNextFrame = (32'h1 << 27);
+localparam SetColAddress = (32'h1 << 28);
+localparam SetRowAddress = (32'h1 << 29);
+localparam WaitNextFrame = (32'h1 << 30);
+localparam SendPixel = (32'h1 << 31);
 
 assign resn = state != Reset;
 assign d_cn = state == SendPixel;
-assign vccen = state == VccEn || state == DisplayOn || state == WaitNextFrame ||
-  state == SetColAddress || state == SetRowAddress || state == SendPixel;
+assign vccen = state == VccEn || state == DisplayOn ||
+  state == PrepareNextFrame || state == SetColAddress ||
+  state == SetRowAddress || state == WaitNextFrame || state == SendPixel;
 assign pmoden = !reset;
 
 reg [15:0] color;
 
 reg [StateCount-1:0] state;
-wire [StateCount-1:0] next_state = fsm_next_state(state, frame_begin, pixels_remain);
+wire [StateCount-1:0] next_state = fsm_next_state(state, frame_begin, pixel_index);
 
 function [StateCount-1:0] fsm_next_state;
   input [StateCount-1:0] state;
@@ -136,11 +138,13 @@ function [StateCount-1:0] fsm_next_state;
     DisableScrolling: fsm_next_state = ClearScreen;
     ClearScreen: fsm_next_state = VccEn;
     VccEn: fsm_next_state = DisplayOn;
-    DisplayOn: fsm_next_state = WaitNextFrame;
-    WaitNextFrame: fsm_next_state = frame_begin ? SetColAddress : WaitNextFrame;
+    DisplayOn: fsm_next_state = PrepareNextFrame;
+    PrepareNextFrame: fsm_next_state = SetColAddress;
     SetColAddress: fsm_next_state = SetRowAddress;
-    SetRowAddress: fsm_next_state = SendPixel;
-    SendPixel: fsm_next_state = (pixels_remain == 0) ? WaitNextFrame : SendPixel;
+    SetRowAddress: fsm_next_state = WaitNextFrame;
+    WaitNextFrame: fsm_next_state = frame_begin ? SendPixel : WaitNextFrame;
+    SendPixel: fsm_next_state = (pixel_index == PixelCount-1) ?
+      PrepareNextFrame : SendPixel;
     default: fsm_next_state = PowerUp;
   endcase
 endfunction
@@ -166,7 +170,7 @@ always @(negedge clk) begin
     spi_word_bit_count <= 0;
     color <= 0;
   end else begin
-    frame_counter <= frame_begin ? FrameDiv : frame_counter - 1;
+    frame_counter <= frame_begin ? 0 : frame_counter + 1;
 
     if (frame_begin)
       color <= color + 1;
@@ -343,6 +347,12 @@ always @(negedge clk) begin
           spi_word_bit_count <= 8;
           delay <= (ClkFreq * StartupCompleteDelay) / 1000;
         end
+        PrepareNextFrame: begin
+          // Deassert CS before beginning next frame
+          spi_word <= 0;
+          spi_word_bit_count <= 0;
+          delay <= 1;
+        end
         SetColAddress: begin
           // Set the column address
           spi_word <= {24'h15005F, {SpiCommandMaxWidth-24{1'b0}}};
@@ -355,6 +365,11 @@ always @(negedge clk) begin
           spi_word_bit_count <= 24;
           delay <= 1;
         end
+        WaitNextFrame: begin
+          spi_word <= 0;
+          spi_word_bit_count <= 0;
+          delay <= 0;
+        end
         SendPixel: begin
           spi_word <= {color, {SpiCommandMaxWidth-16{1'b0}}};
           spi_word_bit_count <= 16;
@@ -366,11 +381,6 @@ always @(negedge clk) begin
           delay <= 0;
         end
       endcase
-
-      if (state == SendPixel)
-        pixels_remain <= pixels_remain - 1;
-      else
-        pixels_remain <= PixelCount - 1;
     end
   end
 end
