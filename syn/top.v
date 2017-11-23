@@ -122,8 +122,8 @@ wire frame_begin, sending_pixels, sample_pixel;
 wire [12:0] pixel_index;
 wire [15:0] pixel_data;
 
-prbs_source prbs_source(spi_clk, spi_reset, frame_begin, sample_pixel,
-  pixel_data);
+ram_source ram_source(spi_clk, spi_reset, frame_begin, sample_pixel,
+  pixel_index, pixel_data);
 
 pmodoledrgb_controller #(SpiFreq) pmodoledrgb_controller(spi_clk, spi_reset,
   frame_begin, sending_pixels, sample_pixel, pixel_index, pixel_data,

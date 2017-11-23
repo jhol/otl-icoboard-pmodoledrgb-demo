@@ -30,7 +30,8 @@
 outdir=_out/
 src=\
 	src/pmodoledrgb_controller.v \
-	src/prbs_source.v
+	src/prbs_source.v \
+	src/ram_source.v
 
 synthesize: $(outdir)demo.bin
 
