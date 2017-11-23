@@ -28,7 +28,9 @@
 #
 
 outdir=_out/
-src=src/pmodoledrgb_controller.v
+src=\
+	src/pmodoledrgb_controller.v \
+	src/prbs_source.v
 
 synthesize: $(outdir)demo.bin
 

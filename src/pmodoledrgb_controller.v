@@ -27,11 +27,19 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-module pmodoledrgb_controller(clk, reset, frame_begin, cs, sdin, sclk, d_cn,
-  resn, vccen, pmoden);
+module pmodoledrgb_controller(clk, reset, frame_begin, sending_pixels,
+  sample_pixel, pixel_index, pixel_data, cs, sdin, sclk, d_cn, resn, vccen,
+  pmoden);
+localparam Width = 96;
+localparam Height = 64;
+localparam PixelCount = Width * Height;
+localparam PixelCountWidth = $clog2(PixelCount);
+
 parameter ClkFreq = 6250000; // Hz
 input clk, reset;
-output frame_begin;
+output frame_begin, sending_pixels, sample_pixel;
+output [PixelCountWidth-1:0] pixel_index;
+input [15:0] pixel_data;
 output cs, sdin, sclk, d_cn, resn, vccen, pmoden;
 
 // Frame begin event
@@ -41,14 +49,6 @@ localparam FrameDivWidth = $clog2(FrameDiv);
 
 reg [FrameDivWidth-1:0] frame_counter;
 assign frame_begin = (frame_counter == FrameDiv-1);
-
-// Video
-localparam Width = 96;
-localparam Height = 64;
-localparam PixelCount = Width * Height;
-localparam PixelCountWidth = $clog2(PixelCount);
-
-wire [PixelCountWidth-1:0] pixel_index = frame_counter[FrameDivWidth-1:$clog2(16)];
 
 // State Machine
 localparam PowerDelay = 20; // ms
@@ -96,8 +96,10 @@ localparam SetRowAddress = 5'b10011;
 localparam WaitNextFrame = 5'b10001;
 localparam SendPixel = 5'b10000;
 
+assign sending_pixels = state == SendPixel;
+
 assign resn = state != Reset;
-assign d_cn = state == SendPixel;
+assign d_cn = sending_pixels;
 assign vccen = state == VccEn || state == DisplayOn ||
   state == PrepareNextFrame || state == SetColAddress ||
   state == SetRowAddress || state == WaitNextFrame || state == SendPixel;
@@ -162,6 +164,12 @@ assign cs = !spi_busy;
 assign sclk = clk | !spi_busy;
 assign sdin = spi_word[SpiCommandMaxWidth-1] & spi_busy;
 
+// Video
+assign sample_pixel = (state == WaitNextFrame && frame_begin) ||
+  (sending_pixels && spi_word_bit_count == 1);
+assign pixel_index = sending_pixels ?
+  frame_counter[FrameDivWidth-1:$clog2(16)] : 0;
+
 always @(negedge clk) begin
   if (reset) begin
     frame_counter <= 0;
@@ -169,12 +177,8 @@ always @(negedge clk) begin
     state <= 0;
     spi_word <= 0;
     spi_word_bit_count <= 0;
-    color <= 0;
   end else begin
     frame_counter <= frame_begin ? 0 : frame_counter + 1;
-
-    if (frame_begin)
-      color <= color + 1;
 
     if (spi_word_bit_count > 1) begin
       spi_word_bit_count <= spi_word_bit_count - 1;
@@ -372,7 +376,7 @@ always @(negedge clk) begin
           delay <= 0;
         end
         SendPixel: begin
-          spi_word <= {color, {SpiCommandMaxWidth-16{1'b0}}};
+          spi_word <= {pixel_data, {SpiCommandMaxWidth-16{1'b0}}};
           spi_word_bit_count <= 16;
           delay <= 0;
         end

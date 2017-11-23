@@ -27,32 +27,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-`timescale 1ns/1ns
+/**
+ * A pixel source that generates pixels with a 20-bit LFSR.
+ */
+module prbs_source(clk, reset, frame_begin, sample_pixel, pixel_data);
+input clk, reset;
+output frame_begin, sample_pixel;
+input [15:0] pixel_data = r;
 
-module test;
-parameter ClkFreq = 6250000; // Hz
+reg [19:0] r;
 
-reg reset = 0;
-reg start = 0;
-initial begin
-  $dumpfile("pmod_oled.vcd");
-  $dumpvars(0, test);
-
-  #160 reset = 1;
-  #160 reset = 0;
-  #250000000 $finish;
+always @(negedge clk) begin
+  if (reset)
+    r <= 24'hAAAAAA;
+  else if (sample_pixel)
+    r <= {r[18:0], r[19] ^ r[16]};
 end
-
-reg clk = 0;
-always #80 clk = !clk;
-
-wire frame_begin, sending_pixels, sample_pixel;
-wire [12:0] pixel_index;
-wire [15:0] pixel_data;
-wire cs, sdin, sclk, d_cn, resn, vccen, pmoden;
-
-pmodoledrgb_controller #(ClkFreq) c1(clk, reset, frame_begin, sending_pixels,
-  sample_pixel, pixel_index, pixel_data, cs, sdin, sclk, d_cn, resn, vccen,
-  pmoden);
 
 endmodule

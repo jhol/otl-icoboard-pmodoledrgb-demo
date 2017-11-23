@@ -118,11 +118,16 @@ wire pmodoldedrgb_resn = p1_8;
 wire pmodoldedrgb_vccen = p1_9;
 wire pmodoldedrgb_pmoden = p1_10;
 
-wire frame_begin;
+wire frame_begin, sending_pixels, sample_pixel;
+wire [12:0] pixel_index;
+wire [15:0] pixel_data;
 
-pmodoledrgb_controller #(SpiFreq) pmodoled_controller(spi_clk, spi_reset,
-  frame_begin, pmodoldedrgb_cs, pmodoldedrgb_sdin, pmodoldedrgb_sclk,
-  pmodoldedrgb_d_cn, pmodoldedrgb_resn, pmodoldedrgb_vccen,
-  pmodoldedrgb_pmoden);
+prbs_source prbs_source(spi_clk, spi_reset, frame_begin, sample_pixel,
+  pixel_data);
+
+pmodoledrgb_controller #(SpiFreq) pmodoledrgb_controller(spi_clk, spi_reset,
+  frame_begin, sending_pixels, sample_pixel, pixel_index, pixel_data,
+  pmodoldedrgb_cs, pmodoldedrgb_sdin, pmodoldedrgb_sclk, pmodoldedrgb_d_cn,
+  pmodoldedrgb_resn, pmodoldedrgb_vccen, pmodoldedrgb_pmoden);
 
 endmodule
