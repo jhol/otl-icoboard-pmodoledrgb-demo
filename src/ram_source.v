@@ -37,22 +37,12 @@ output frame_begin, sample_pixel;
 input [12:0] pixel_index;
 output [15:0] pixel_data;
 
-localparam BlockCount = (64 * 96) / 256;
+localparam PixelCount = 64 * 96;
 
-wire [15:0] block_read_data[BlockCount-1];
-assign pixel_data = block_read_data[pixel_index[11:8]];
+reg [15:0] mem[0:PixelCount-1];
 
-genvar i;
-generate
-  for (i = 0; i < BlockCount; i = i + 1) begin
-    SB_RAM40_4KNR ram_inst(
-      .RDATA(block_read_data[i]),
-      .RADDR(pixel_index[7:0]),
-      .RCLKN(clk),
-      .RCLKE(1'b1),
-      .RE(1'b1)
-    );
-  end
-endgenerate
+always @(posedge clk)
+  if (sample_pixel)
+    pixel_data <= mem[pixel_index];
 
 endmodule
