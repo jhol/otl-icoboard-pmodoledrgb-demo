@@ -45,4 +45,6 @@ always @(posedge clk)
   if (sample_pixel)
     pixel_data <= mem[pixel_index];
 
+initial $readmemh("src/ram_template.hex", mem);
+
 endmodule

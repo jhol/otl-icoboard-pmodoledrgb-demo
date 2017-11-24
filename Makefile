@@ -35,15 +35,23 @@ src=\
 
 synthesize: $(outdir)demo.bin
 
-$(outdir)demo.blif: syn/top.v syn/demo.pcf $(src)
+$(outdir)image.hex: src/image.png
+	ffmpeg -i $< -f rawvideo -pix_fmt rgb565 - | \
+	  od -An -vtx2 -w2 > $@
+
+$(outdir)demo.blif: syn/top.v syn/demo.pcf $(src) src/ram_template.hex
 	mkdir -p $(outdir)
 	yosys -q -p "synth_ice40 -blif $(outdir)demo.blif" syn/top.v $(src)
 
-$(outdir)demo.asc: $(outdir)demo.blif
+$(outdir)demo.asc.template: $(outdir)demo.blif
 	arachne-pnr -d 8k -p syn/demo.pcf $< -o $@
+	icetime -d hx8k -c 25 $@
+
+$(outdir)demo.asc: $(outdir)demo.asc.template src/ram_template.hex  \
+  $(outdir)image.hex
+	icebram src/ram_template.hex $(outdir)image.hex < $< > $@
 
 $(outdir)demo.bin: $(outdir)demo.asc
-	icetime -d hx8k -c 25 $<
 	icepack $< $@
 
 simulate: $(outdir)pmod_oled.vcd
