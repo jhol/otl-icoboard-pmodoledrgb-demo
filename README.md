@@ -22,6 +22,7 @@ Synthesize Bitstream
 
 To synthesize bitstream...
 ```
+$ cd fw/
 $ make
 ```
 Output is stored in `_out/demo.bin`.
@@ -30,6 +31,7 @@ Run Simulation
 --------------
 
 ```
+$ cd fw/
 $ make simulate
 ```
 Results will be displayed in GTKWave.
