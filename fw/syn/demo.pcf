@@ -37,3 +37,7 @@ set_io pmod1_7 B8
 set_io pmod1_8 A9
 set_io pmod1_9 A10
 set_io pmod1_10 A11
+
+set_io rpi_sck H11
+set_io rpi_cs D4
+set_io rpi_mosi A6

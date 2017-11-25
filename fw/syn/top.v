@@ -64,7 +64,7 @@ endmodule
 
 module top(input clk_100mhz, output pmod1_1, output pmod1_2, output pmod1_3,
   output pmod1_4, output pmod1_7, output pmod1_8, output pmod1_9,
-  output pmod1_10);
+  output pmod1_10, input rpi_sck, input rpi_cs, input rpi_mosi);
 parameter ClkFreq = 25000000; // Hz
 
 // Clock Generator
@@ -107,7 +107,7 @@ localparam SpiPeriod = (ClkFreq + (SpiDesiredFreq * 2) - 1) / (SpiDesiredFreq * 
 localparam SpiFreq = ClkFreq / (SpiPeriod * 2);
 
 wire spi_clk, spi_reset;
-clkgen #(SpiPeriod) spi_clkgen(clk_25mhz, reset, spi_clk, spi_reset);
+clkgen #(SpiPeriod) spi_clkgen(clk, reset, spi_clk, spi_reset);
 
 // PmodOLEDrgb
 wire pmodoldedrgb_cs = pmod1_1;
@@ -123,8 +123,15 @@ wire frame_begin, sending_pixels, sample_pixel;
 wire [12:0] pixel_index;
 wire [15:0] pixel_data;
 
+wire ram_wr;
+wire [12:0] ram_addr;
+wire [15:0] ram_data;
+
+spi_ram_slave spi_ram_slave(clk, rpi_sck, rpi_cs, rpi_mosi,
+  ram_addr, ram_data, ram_wr);
+
 ram_source ram_source(spi_clk, spi_reset, frame_begin, sample_pixel,
-  pixel_index, pixel_data);
+  pixel_index, pixel_data, clk, ram_wr, ram_addr, ram_data);
 
 pmodoledrgb_controller #(SpiFreq) pmodoledrgb_controller(spi_clk, spi_reset,
   frame_begin, sending_pixels, sample_pixel, pixel_index, pixel_data,
