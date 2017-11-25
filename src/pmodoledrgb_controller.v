@@ -48,7 +48,7 @@ localparam FrameDiv = ClkFreq / FrameFreq;
 localparam FrameDivWidth = $clog2(FrameDiv);
 
 reg [FrameDivWidth-1:0] frame_counter;
-assign frame_begin = (frame_counter == FrameDiv-1);
+assign frame_begin = frame_counter == 0;
 
 // State Machine
 localparam PowerDelay = 20; // ms
@@ -166,7 +166,7 @@ assign sdin = spi_word[SpiCommandMaxWidth-1] & spi_busy;
 
 // Video
 assign sample_pixel = (state == WaitNextFrame && frame_begin) ||
-  (sending_pixels && spi_word_bit_count == 1);
+  (sending_pixels && frame_counter[3:0] == 0);
 assign pixel_index = sending_pixels ?
   frame_counter[FrameDivWidth-1:$clog2(16)] : 0;
 
@@ -178,7 +178,7 @@ always @(negedge clk) begin
     spi_word <= 0;
     spi_word_bit_count <= 0;
   end else begin
-    frame_counter <= frame_begin ? 0 : frame_counter + 1;
+    frame_counter <= (frame_counter == FrameDiv-1) ? 0 : frame_counter + 1;
 
     if (spi_word_bit_count > 1) begin
       spi_word_bit_count <= spi_word_bit_count - 1;
