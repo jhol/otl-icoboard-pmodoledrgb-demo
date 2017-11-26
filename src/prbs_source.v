@@ -39,7 +39,7 @@ reg [19:0] r;
 
 always @(negedge clk) begin
   if (reset)
-    r <= 24'hAAAAAA;
+    r <= 20'hAAAAA;
   else if (sample_pixel)
     r <= {r[18:0], r[19] ^ r[16]};
 end
