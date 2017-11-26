@@ -29,11 +29,11 @@
 
 set_io clk_100mhz R9
 
-set_io p1_1 D8
-set_io p1_2 B9
-set_io p1_3 B10
-set_io p1_4 B11
-set_io p1_7 B8
-set_io p1_8 A9
-set_io p1_9 A10
-set_io p1_10 A11
+set_io pmod1_1 D8
+set_io pmod1_2 B9
+set_io pmod1_3 B10
+set_io pmod1_4 B11
+set_io pmod1_7 B8
+set_io pmod1_8 A9
+set_io pmod1_9 A10
+set_io pmod1_10 A11

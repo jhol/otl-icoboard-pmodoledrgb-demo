@@ -62,8 +62,9 @@ end
 endmodule
 
 
-module top(input clk_100mhz, output p1_1, output p1_2, output p1_3,
-  output p1_4, output p1_7, output p1_8, output p1_9, output p1_10);
+module top(input clk_100mhz, output pmod1_1, output pmod1_2, output pmod1_3,
+  output pmod1_4, output pmod1_7, output pmod1_8, output pmod1_9,
+  output pmod1_10);
 parameter ClkFreq = 25000000; // Hz
 
 // Clock Generator
@@ -109,14 +110,14 @@ wire spi_clk, spi_reset;
 clkgen #(SpiPeriod) spi_clkgen(clk_25mhz, reset, spi_clk, spi_reset);
 
 // PmodOLEDrgb
-wire pmodoldedrgb_cs = p1_1;
-wire pmodoldedrgb_sdin = p1_2;
-assign p1_3 = 0;
-wire pmodoldedrgb_sclk = p1_4;
-wire pmodoldedrgb_d_cn = p1_7;
-wire pmodoldedrgb_resn = p1_8;
-wire pmodoldedrgb_vccen = p1_9;
-wire pmodoldedrgb_pmoden = p1_10;
+wire pmodoldedrgb_cs = pmod1_1;
+wire pmodoldedrgb_sdin = pmod1_2;
+assign pmod1_3 = 0;
+wire pmodoldedrgb_sclk = pmod1_4;
+wire pmodoldedrgb_d_cn = pmod1_7;
+wire pmodoldedrgb_resn = pmod1_8;
+wire pmodoldedrgb_vccen = pmod1_9;
+wire pmodoldedrgb_pmoden = pmod1_10;
 
 wire frame_begin, sending_pixels, sample_pixel;
 wire [12:0] pixel_index;
