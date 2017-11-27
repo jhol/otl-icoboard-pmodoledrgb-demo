@@ -62,10 +62,13 @@ end
 endmodule
 
 
-module top(input clk_100mhz, output pmod1_1, output pmod1_2, output pmod1_3,
-  output pmod1_4, output pmod1_7, output pmod1_8, output pmod1_9,
-  output pmod1_10, input rpi_sck, input rpi_cs, input rpi_mosi);
+module top(clk_100mhz, pmod1_1, pmod1_2, pmod1_3, pmod1_4, pmod1_7, pmod1_8,
+  pmod1_9, pmod1_10, rpi_sck, rpi_cs, rpi_mosi);
 parameter ClkFreq = 50000000; // Hz
+
+input clk_100mhz;
+output pmod1_1, pmod1_2, pmod1_3, pmod1_4, pmod1_7, pmod1_8, pmod1_9, pmod1_10;
+input rpi_sck, rpi_cs, rpi_mosi;
 
 // Clock Generator
 wire clk_50mhz;
