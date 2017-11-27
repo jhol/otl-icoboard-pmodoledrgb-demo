@@ -83,11 +83,11 @@ SB_PLL40_PAD #(
   .DIVQ(3'b101),
   .FILTER_RANGE(3'b101)
 ) pll (
-  .PACKAGEPIN   (clk_100mhz),
-  .PLLOUTGLOBAL (clk_25mhz),
-  .LOCK         (pll_locked),
-  .BYPASS       (1'b0),
-  .RESETB       (1'b1)
+  .PACKAGEPIN(clk_100mhz),
+  .PLLOUTGLOBAL(clk_25mhz),
+  .LOCK(pll_locked),
+  .BYPASS(1'b0),
+  .RESETB(1'b1)
 );
 
 wire clk = clk_25mhz;
