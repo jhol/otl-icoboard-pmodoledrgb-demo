@@ -43,7 +43,7 @@ demo.blif: syn/top.v syn/demo.pcf $(src) src/ram_template.hex
 
 demo.asc.template: demo.blif
 	arachne-pnr -d 8k -p syn/demo.pcf $< -o $@
-	icetime -d hx8k -c 25 $@
+	icetime -d hx8k -c 50 $@
 
 demo.asc: demo.asc.template src/ram_template.hex image.hex
 	icebram src/ram_template.hex image.hex < $< > $@

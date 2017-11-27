@@ -65,10 +65,10 @@ endmodule
 module top(input clk_100mhz, output pmod1_1, output pmod1_2, output pmod1_3,
   output pmod1_4, output pmod1_7, output pmod1_8, output pmod1_9,
   output pmod1_10, input rpi_sck, input rpi_cs, input rpi_mosi);
-parameter ClkFreq = 25000000; // Hz
+parameter ClkFreq = 50000000; // Hz
 
 // Clock Generator
-wire clk_25mhz;
+wire clk_50mhz;
 wire pll_locked;
 
 SB_PLL40_PAD #(
@@ -80,17 +80,17 @@ SB_PLL40_PAD #(
   .FDA_RELATIVE(4'b1111),
   .DIVR(4'b0000),
   .DIVF(7'b0000111),
-  .DIVQ(3'b101),
+  .DIVQ(3'b100),
   .FILTER_RANGE(3'b101)
 ) pll (
   .PACKAGEPIN(clk_100mhz),
-  .PLLOUTGLOBAL(clk_25mhz),
+  .PLLOUTGLOBAL(clk_50mhz),
   .LOCK(pll_locked),
   .BYPASS(1'b0),
   .RESETB(1'b1)
 );
 
-wire clk = clk_25mhz;
+wire clk = clk_50mhz;
 
 // Reset Generator
 reg [3:0] resetn_gen = 0;
