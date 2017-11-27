@@ -27,42 +27,37 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-outdir=_out/
 src=\
 	src/pmodoledrgb_controller.v \
 	src/prbs_source.v \
 	src/ram_source.v \
 	src/spi_ram_slave.v
 
-synthesize: $(outdir)demo.bin
+synthesize: demo.bin
 
-$(outdir)image.hex: src/image.png
-	ffmpeg -i $< -f rawvideo -pix_fmt rgb565 - | \
-	  od -An -vtx2 -w2 > $@
+image.hex: src/image.png
+	ffmpeg -i $< -f rawvideo -pix_fmt rgb565 - | od -An -vtx2 -w2 > $@
 
-$(outdir)demo.blif: syn/top.v syn/demo.pcf $(src) src/ram_template.hex
-	mkdir -p $(outdir)
-	yosys -q -p "synth_ice40 -blif $(outdir)demo.blif" syn/top.v $(src)
+demo.blif: syn/top.v syn/demo.pcf $(src) src/ram_template.hex
+	yosys -q -p "synth_ice40 -blif demo.blif" syn/top.v $(src)
 
-$(outdir)demo.asc.template: $(outdir)demo.blif
+demo.asc.template: demo.blif
 	arachne-pnr -d 8k -p syn/demo.pcf $< -o $@
 	icetime -d hx8k -c 25 $@
 
-$(outdir)demo.asc: $(outdir)demo.asc.template src/ram_template.hex  \
-  $(outdir)image.hex
-	icebram src/ram_template.hex $(outdir)image.hex < $< > $@
+demo.asc: demo.asc.template src/ram_template.hex image.hex
+	icebram src/ram_template.hex image.hex < $< > $@
 
-$(outdir)demo.bin: $(outdir)demo.asc
+demo.bin: demo.asc
 	icepack $< $@
 
-simulate: $(outdir)pmod_oled.vcd
+simulate: pmod_oled.vcd
 	gtkwave $< >/dev/null 2>/dev/null &
 
-$(outdir)pmod_oled.vcd: $(outdir)pmod_oled-sim
-	cd $(outdir); ./pmod_oled-sim
+pmod_oled.vcd: pmod_oled-sim
+	./pmod_oled-sim
 
-$(outdir)pmod_oled-sim: src/pmodoledrgb_controller.v sim/main.v
-	mkdir -p $(outdir)
+pmod_oled-sim: src/pmodoledrgb_controller.v sim/main.v
 	iverilog -o $@ $^
 
 .PHONY: synthesize simulate

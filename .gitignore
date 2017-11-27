@@ -1,2 +1,9 @@
-_out/
+*-sim
+*.asc
+*.asc.template
+*.bin
+*.blif
+*.hex
+*.vcd
+
 stream-tool/stream-tool

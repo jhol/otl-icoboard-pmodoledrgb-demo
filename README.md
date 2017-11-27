@@ -25,7 +25,7 @@ To synthesize bitstream...
 $ cd fw/
 $ make
 ```
-Output is stored in `_out/demo.bin`.
+Output is stored in `demo.bin`.
 
 Run Simulation
 --------------
