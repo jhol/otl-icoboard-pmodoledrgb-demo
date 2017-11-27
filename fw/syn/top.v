@@ -27,41 +27,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-module clkgen(in_clk, in_reset, out_clk, out_reset);
-parameter Period = 1;
-input in_clk, in_reset;
-output out_clk, out_reset;
-
-localparam PeriodWidth = $clog2(Period);
-
-reg [PeriodWidth-1:0] counter;
-reg clk_reg;
-reg [1:0] reset_gen;
-reg reset_reg;
-
-assign out_clk = clk_reg;
-assign out_reset = reset_reg;
-
-always @(posedge in_clk) begin
-  if (in_reset) begin
-    counter <= 0;
-    clk_reg <= 0;
-    reset_gen <= 0;
-  end else begin
-    if (counter == 0) begin
-      reset_reg <= 0;
-      counter <= Period - 1;
-      clk_reg <= !clk_reg;
-      reset_gen <= {reset_gen, 1'b1};
-    end else
-      counter <= counter - 1;
-  end
-  reset_reg <= !(&reset_gen);
-end
-
-endmodule
-
-
 module top(clk_100mhz, pmod1_1, pmod1_2, pmod1_3, pmod1_4, pmod1_7, pmod1_8,
   pmod1_9, pmod1_10, rpi_sck, rpi_cs, rpi_mosi);
 parameter ClkFreq = 50000000; // Hz
@@ -110,7 +75,7 @@ localparam SpiPeriod = (ClkFreq + (SpiDesiredFreq * 2) - 1) / (SpiDesiredFreq * 
 localparam SpiFreq = ClkFreq / (SpiPeriod * 2);
 
 wire spi_clk, spi_reset;
-clkgen #(SpiPeriod) spi_clkgen(clk, reset, spi_clk, spi_reset);
+clock_generator #(SpiPeriod) spi_clkgen(clk, reset, spi_clk, spi_reset);
 
 // PmodOLEDrgb
 wire pmodoldedrgb_cs = pmod1_1;

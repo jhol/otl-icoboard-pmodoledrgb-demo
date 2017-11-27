@@ -28,6 +28,7 @@
 #
 
 src=\
+	src/clock_generator.v \
 	src/pmodoledrgb_controller.v \
 	src/prbs_source.v \
 	src/ram_source.v \
