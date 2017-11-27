@@ -63,7 +63,7 @@ reg [$clog2(WordCount)-1:0] addr;
 reg [WordWidth-1:0] data;
 
 assign ram_addr = addr;
-assign ram_data = data;
+assign ram_data = {data[7:0], data[15:8]};
 assign ram_wr = word_received;
 
 always @(negedge clk) begin
