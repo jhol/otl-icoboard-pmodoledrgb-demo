@@ -58,7 +58,16 @@ pmodoledrgb_controller-sim: src/pmodoledrgb_controller.v \
   sim/pmodoledrgb_controller.v
 	iverilog -o $@ $^
 
+simulate-spi_ram_slave: spi_ram_slave.vcd
+	gtkwave $< >/dev/null 2>/dev/null &
+
+spi_ram_slave-sim: src/spi_ram_slave.v sim/spi_ram_slave.v
+	iverilog -o $@ $^
+
 %.vcd: %-sim
 	cd $(dir $<); ./$(notdir $<)
 
-.PHONY: synthesize simulate-pmodoledrgb_controller
+.PHONY: \
+  synthesize \
+  simulate-pmodoledrgb_controller \
+  simulate

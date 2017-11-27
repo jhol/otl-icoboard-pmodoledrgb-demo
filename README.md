@@ -37,5 +37,6 @@ $ make simulate-XXX
 ...where the available simulations are:
 
  * simulate-pmodoledrgb_controller
+ * simulate-spi_ram_slave
 
 Results will be displayed in GTKWave.
