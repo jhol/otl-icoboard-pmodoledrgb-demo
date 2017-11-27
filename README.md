@@ -32,6 +32,10 @@ Run Simulation
 
 ```
 $ cd fw/
-$ make simulate
+$ make simulate-XXX
 ```
+...where the available simulations are:
+
+ * simulate-pmodoledrgb_controller
+
 Results will be displayed in GTKWave.

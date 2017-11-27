@@ -51,13 +51,14 @@ demo.asc: demo.asc.template src/ram_template.hex image.hex
 demo.bin: demo.asc
 	icepack $< $@
 
-simulate: pmod_oled.vcd
+simulate-pmodoledrgb_controller: pmodoledrgb_controller.vcd
 	gtkwave $< >/dev/null 2>/dev/null &
 
-pmod_oled.vcd: pmod_oled-sim
-	./pmod_oled-sim
-
-pmod_oled-sim: src/pmodoledrgb_controller.v sim/main.v
+pmodoledrgb_controller-sim: src/pmodoledrgb_controller.v \
+  sim/pmodoledrgb_controller.v
 	iverilog -o $@ $^
 
-.PHONY: synthesize simulate
+%.vcd: %-sim
+	cd $(dir $<); ./$(notdir $<)
+
+.PHONY: synthesize simulate-pmodoledrgb_controller

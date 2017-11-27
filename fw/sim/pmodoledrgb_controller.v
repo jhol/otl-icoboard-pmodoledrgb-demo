@@ -35,7 +35,7 @@ parameter ClkFreq = 6250000; // Hz
 reg reset = 0;
 reg start = 0;
 initial begin
-  $dumpfile("pmod_oled.vcd");
+  $dumpfile("pmodoledrgb_controller.vcd");
   $dumpvars(0, test);
 
   #160 reset = 1;
