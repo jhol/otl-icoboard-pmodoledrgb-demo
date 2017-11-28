@@ -33,6 +33,11 @@ selection of video sources, including:
  * Pseudo-random video noise generated on-the-fly by a 20-bit
    [Linear-feedback Shift Register (LFSR)](https://en.wikipedia.org/wiki/LFSR).
 
+The different inputs are selected by button presses to a
+[PmodBTN](https://reference.digilentinc.com/reference/pmod/pmodbtn/start) - a
+Pmod featuring 4× hardware debounce filtered tactile switches, connected to
+Pmod port #2 on the IcoBoard.
+
 Build Requisites
 ----------------
 
