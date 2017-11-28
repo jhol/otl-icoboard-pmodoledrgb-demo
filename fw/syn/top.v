@@ -110,7 +110,8 @@ wire pmodoldedrgb_pmoden = pmod1_10;
 
 wire frame_begin, sending_pixels, sample_pixel;
 wire [12:0] pixel_index;
-wire [15:0] pixel_data, ram_pixel_data, prbs_pixel_data;
+wire [15:0] pixel_data, ram_pixel_data, prbs_pixel_data,
+  video_hack_1_pixel_data;
 wire [6:0] x;
 wire [5:0] y;
 
@@ -130,11 +131,14 @@ ram_source ram_source(spi_clk, spi_reset, frame_begin, sample_pixel,
 prbs_source prbs_source(spi_clk, spi_reset, frame_begin, sample_pixel,
   prbs_pixel_data);
 
+video_hack_1 video_hack_1(clk, reset, frame_begin, x, y,
+  video_hack_1_pixel_data);
+
 always @(*) begin
   case (video_source)
     0: pixel_data = ram_pixel_data;
     1: pixel_data = prbs_pixel_data;
-    2: pixel_data = {5'b11111, 6'b000000, 5'b00000};
+    2: pixel_data = video_hack_1_pixel_data;
     3: pixel_data = {5'b00000, 6'b000000, 5'b11111};
   endcase
 end
