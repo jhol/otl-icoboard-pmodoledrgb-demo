@@ -34,7 +34,8 @@ src=\
 	src/prbs_source.v \
 	src/ram_source.v \
 	src/spi_ram_slave.v \
-	src/video_hack_1.v
+	src/video_hack_1.v \
+	src/video_hack_2.v
 
 synthesize: demo.bin
 

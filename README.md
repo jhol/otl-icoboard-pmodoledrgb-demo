@@ -33,6 +33,7 @@ selection of video sources, including:
  * Pseudo-random video noise generated on-the-fly by a 20-bit
    [Linear-feedback Shift Register (LFSR)](https://en.wikipedia.org/wiki/LFSR).
  * A video hack that produces a moving multi-coloured pattern.
+ * A video hack that fills the screen with a binary counter made of blocks.
 
 The different inputs are selected by button presses to a
 [PmodBTN](https://reference.digilentinc.com/reference/pmod/pmodbtn/start) - a
