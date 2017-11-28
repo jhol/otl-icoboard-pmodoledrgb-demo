@@ -111,10 +111,15 @@ wire pmodoldedrgb_pmoden = pmod1_10;
 wire frame_begin, sending_pixels, sample_pixel;
 wire [12:0] pixel_index;
 wire [15:0] pixel_data, ram_pixel_data, prbs_pixel_data;
+wire [6:0] x;
+wire [5:0] y;
 
 wire ram_wr;
 wire [12:0] ram_addr;
 wire [15:0] ram_data;
+
+coordinate_decoder coordinate_decoder(spi_clk, sending_pixels, sample_pixel,
+  x, y);
 
 spi_ram_slave spi_ram_slave(clk, rpi_sck, rpi_cs, rpi_mosi,
   ram_addr, ram_data, ram_wr);
