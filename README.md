@@ -23,17 +23,23 @@ display controller, which is controlled by the FPGA through a Mode-3
 [SPI](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus) slave
 interface, via Pmod port #1 on the IcoBoard.
 
+![Display Modes](modes.jpg)
+
+*Display outputs A-E left-to-right*
+
 This demo firmware sends full frame-buffer video images at 60-FPS from a
 selection of video sources, including:
 
  * Video imagery sourced from block-RAM. At start-up the block-RAM is
-   pre-populated with a static image. The contents of the block-RAM can also be
-   replaced by the RasperryPI on a one-shot or repeated basis with stream-tool,
-   so that still or moving images can be displayed on the screen (see below).
+   pre-populated with a static image (A). The contents of the block-RAM can
+   also be replaced by the RasperryPI on a one-shot or repeated basis with
+   stream-tool, so that still or moving images (B) can be displayed on the
+   screen (see below).
  * Pseudo-random video noise generated on-the-fly by a 20-bit
-   [Linear-feedback Shift Register (LFSR)](https://en.wikipedia.org/wiki/LFSR).
- * A video hack that produces a moving multi-coloured pattern.
- * A video hack that fills the screen with a binary counter made of blocks.
+   [Linear-feedback Shift Register (LFSR)](https://en.wikipedia.org/wiki/LFSR)
+   (C).
+ * A video hack that produces a moving multi-coloured pattern (D).
+ * A video hack that fills the screen with a binary counter made of blocks (E).
 
 The different inputs are selected by button presses to a
 [PmodBTN](https://reference.digilentinc.com/reference/pmod/pmodbtn/start) - a
