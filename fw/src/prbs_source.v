@@ -33,7 +33,7 @@
 module prbs_source(clk, reset, frame_begin, sample_pixel, pixel_data);
 input clk, reset;
 output frame_begin, sample_pixel;
-input [15:0] pixel_data = r;
+output [15:0] pixel_data = r;
 
 reg [19:0] r;
 
