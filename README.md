@@ -1,4 +1,4 @@
-otl-icoboard-pmodrgboled-demo
+otl-icoboard-pmodoldergb-demo
 =============================
 
 ![Demo Board Setup](demo.jpg)
