@@ -42,10 +42,10 @@ synthesize: demo.bin
 image.hex: src/image.png
 	ffmpeg -i $< -f rawvideo -pix_fmt rgb565 - | od -An -vtx2 -w2 > $@
 
-demo.blif: syn/top.v syn/demo.pcf $(src) src/ram_template.hex
+demo.blif: syn/top.v $(src) src/ram_template.hex
 	yosys -q -p "synth_ice40 -blif demo.blif" syn/top.v $(src)
 
-demo.asc.template: demo.blif
+demo.asc.template: demo.blif syn/demo.pcf
 	arachne-pnr -d 8k -p syn/demo.pcf $< -o $@
 	icetime -d hx8k -c 50 $@
 
