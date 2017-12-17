@@ -46,6 +46,10 @@ The different inputs are selected by button presses to a
 Pmod featuring 4× hardware debounce filtered tactile switches, connected to
 Pmod port #2 on the IcoBoard.
 
+### Design Structure
+
+![Design Structure](structure.jpg)
+
 Build Requisites
 ----------------
 
